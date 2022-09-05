@@ -1,0 +1,474 @@
+---
+title: "I Giochi Olimpici moderni"
+author: "Borsoi Allison"
+date: "30/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Con questa analisi, si vuole valutare le possibili correlazioni tra gli atleti dei vari paesi partecipanti, in base al sesso, età, medaglie. 
+
+```{r include=FALSE}
+library(dplyr)
+library(stats)
+library(ggplot2)
+
+eventi = read.csv("athlete_events.csv") %>%
+  select(ID:NOC, Year:Medal, -City)
+
+stati = read.csv("noc_regions.csv")
+```
+
+# Analisi del dataset 
+
+```{r include=FALSE}
+# summary dei dati totali 
+summary(eventi)
+
+# sport invernali
+ed_inverno = eventi %>% 
+  filter(Season == "Winter") %>%
+  group_by(Sport) %>% 
+  count()
+
+# sport estivi
+ed_estate = eventi %>% 
+  filter(Season == "Summer") %>%
+  group_by(Sport) %>% 
+  count()
+```
+
+Ho suddiviso il dataset in cinque tabelle, che corrispondono ai cinque continenti 
+Ad ogni continente ho indicato i paesi per una lettura più chiara
+
+```{r include=FALSE}
+# AMERICA: STATI UNITI, CANADA, ARGENTINA, BOLIVIA, BRASILE, CILE, COLOMBIA, ECUADOR, GUYANA, PARAGUAY, PERù, SURINAME, URUGUAY, VENEZUELA, ANTIGUA, BAHAMAS, BARBADOS, BELIZE, COSTA RICA, CUBA, DOMINICA, EL SALVADOR, GIAMAICA, GRENADA, GUATEMALA, HAITI, HONDURAS, MESSICO, NICARAGUA, PANAMA, REPPUBLICA DOMINICANA, TRINIDAD, JAMAICA
+america = eventi %>%
+  filter(NOC == "USA"| NOC == "CAN"| NOC == "ARG"| NOC == "BOL"| NOC == "BRA"| NOC == "CHI"|NOC == "COL"| NOC == "ECU"| NOC == "GUY"| NOC == "PAR"| NOC == "PER"| NOC == "SUR"| NOC == "URU"| NOC == "VEN"| NOC == "ANT"| NOC == "BAH"| NOC == "BAR"| NOC == "BIZ"| NOC == "CRC"| NOC == "CUB"| NOC == "DOM"| NOC == "ESA"| NOC == "GRN"| NOC == "GUA"| NOC == "HAI"| NOC == "HON"| NOC == "MEX"| NOC == "NCA"| NOC == "PAN"| NOC == "TTO"| NOC == "JAM") 
+
+# EUROPA: ALBANIA, ANDORRA, AUSTRIA, BELGIO, BIELORUSSIA, BOSNIA, BULGARIA, CIPRO, VATICANO, CROAZIA, DANIMARCA, ESTONIA, FINLANDIA, FRANCIA, GERMANIA, GRECIA, IRLANDA, ISLANDA, ITALIA, LETTONIA, LIECHTENSTEIN, LITUANIA, LUSSEMBURGO, MACEDONIA, MALTA, MOLDAVIA, MONACO, MONTENEGRO, NORVEGIA, PAESI BASSI, POLONIA, PORTOGALLO, GRAN BRETAGNA, REPUBBLICA CECA, ROMANIA, SAN MARINO, SERBIA, SLOVACCHIA, SLOVENIA, SPAGNA, SVEZIA, SVIZZERA, TURCHIA, UCRAINA, UNGHERIA, BIELORUSSIA, IRLANDA, LUSSEMBURGO, PAESI BASSI  
+europa = eventi %>%
+  filter(NOC == "ALB"| NOC == "AND"| NOC == "AUT"| NOC == "BEL"| NOC == "BIH"|NOC == "BUL"| NOC == "CYP"| NOC == "CRO"| NOC == "DEN"| NOC == "EST"|NOC == "FIN"| NOC == "FRA"| NOC == "GER"| NOC == "FRG"| NOC == "GDR"|NOC == "GRE"| NOC == "IRL"| NOC == "ITA"| NOC == "LET"| NOC == "LIE"|NOC == "LUS"| NOC == "LTU"| NOC == "MKD"| NOC == "MLT"| NOC == "MDA"|NOC == "MON"| NOC == "SCG"| NOC == "NOR"| NOC == "POL"| NOC == "POR"|NOC == "GBR"| NOC == "CZE"| NOC == "ROU"| NOC == "URS"|NOC == "SMR"| NOC == "TCH"| NOC == "SLO"| NOC == "ESP"| NOC == "SUI"|NOC == "SWE"| NOC == "TUK"| NOC == "UKR"| NOC == "HUN"| NOC == "BLR"| NOC == "IRL"| NOC == "LUX"| NOC == "NED")
+
+# ASIA: AFGANISTAN, ARABIA SAUDITA, ARMENIA, AZERBAIGIAN, BAHREIN, BANGLADESH, BHUTAN, BRUNEI, CAMBOGIA, CINA, COREA NORD, COREA SUD, ARABI UNITI, FILIPPINE, GEORGIA, GIAPPONE, GIORDANIA, INDIA, INDONESIA, IRAN, IRAQ, ISRAELE, KAZAKISTAN, KIRGHIZISTAN, KUWAIT, LAOS, LIBANO, MALDIVE, MALAYSIA, MONGOLIA, BIRMANIA, NEPAL, OMAN, PAKISTAN, QATAR, RUSSIA, SINGAPORE, SIRIA, SRI LANKA, TAGIKISTAN, THAILANDIA, TIMOR EST, TURCHIA, TURKMENISTAN, UZBEKISTAN, VIETNAM (nord, sud), YEMEN (nord, sud )
+asia = eventi %>% 
+  filter(NOC == "AFG"| NOC == "UAR"| NOC == "AZE"| NOC == "BRN"| NOC == "BAN"|NOC == "BHU"| NOC == "CAM"| NOC == "CHN"| NOC == "CYP"| NOC == "KOR"|NOC == "PRK"| NOC == "KSA"| NOC == "PHI"| NOC == "GEO"| NOC == "JPN"|NOC == "JOR"| NOC == "IND"| NOC == "INA"| NOC == "IRI"| NOC == "IRQ"|NOC == "ISR"| NOC == "KAZ"| NOC == "KUW"| NOC == "LAO"| NOC == "MDV"|NOC == "MAS"| NOC == "MGL"| NOC == "NEP"| NOC == "OMA"| NOC == "PAK"|NOC == "QAT"| NOC == "RUS"| NOC == "SGP"| NOC == "SYR"| NOC == "SRI"|NOC == "THA"| NOC == "TLS"| NOC == "THM"| NOC == "UZV"| NOC == "VIE"|NOC == "VNM"| NOC == "YEM"| NOC == "YAR"| NOC == "YMD"| NOC == "KGZ"|NOC == "TJK"| NOC == "IBN"| NOC == "MAY")
+
+# AFRICA: ALGERIA, ANGOLA, BENIN, BOTSWANA, BURKINA FASO, BURUNDI, CAMERUN, CAPO VERDE, REPUBBLICA CENTRAFRICANA, CIAD, COMORE, COSTA D'AVORIO, CONGO, EGITTO, ERITREA, ETIOPIA, GABON, GAMBIA, GHANA, GIBUTI, GUINEA, KENYA, LESOTHO, LIBERIA, LIBIA, MADAGASCAR, MALAWI, MALI, MAURITANIA, MAURITIUS, MAROCCO, MOZAMBICO, NAMIBIA, NIGER, RUANDA, SENEGAL, SEYCHELLES, SIERRA LEONE, SOMALIA, SUDAFRICA, SUDAN, TANZANIA, TOGO, TUNISIA, UGANDA, ZAMBIA, ZIMBABWE, 
+africa = eventi %>%
+  filter(NOC == "ALG"| NOC == "ANG"|NOC == "BEN"| NOC == "BOT"| NOC == "BDI"| NOC == "BUR"| NOC == "CMR"|NOC == "CPV"| NOC == "COM"| NOC == "CGO"| NOC == "COD"| NOC == "EGY"|NOC == "ERI"| NOC == "GAB"| NOC == "GAM"| NOC == "GHA"| NOC == "GUI"|NOC == "HEN"| NOC == "LES"| NOC == "LBR"| NOC == "LBA"| NOC == "MAD"|NOC == "MAW"| NOC == "MLI"|NOC == "MRI"| NOC == "MTN"| NOC == "MOZ"| NOC == "NAM"| NOC == "NGR"|NOC == "SAN"| NOC == "SEY"| NOC == "SLE"| NOC == "SOM"| NOC == "RSA"|NOC == "SUD"| NOC == "TAN"| NOC == "TOG"| NOC == "TUN"| NOC == "ZAM"|NOC == "ZIM"| NOC == "CAF"| NOC == "CHA"| NOC == "CIV"| NOC == "ETH"|NOC == "MAR"| NOC == "DJI"|NOC == "RWA")
+
+#OCEANIA: AUSTRALIA, NUOVA ZELANDA, PAPUA NUOVA GUINEA, FIGI, ISOLE SALOMONE, VANUATU, MICROINDONESIA, KIRIBATI, ISOLE MARSHALL, PALAU, NAURU, SAMOA, TONGA, TUVALU 
+oceania = eventi %>%
+  filter(NOC == "AUS"| NOC == "NZL"|NOC == "PNG"| NOC == "FIJ"| NOC == "VAN"| NOC == "FSM"| NOC == "KIR"|NOC == "MHL"| NOC == "PLW"| NOC == "NRU"| NOC == "SAM"| NOC == "TGA"|NOC == "TUV")
+```
+
+Per un'analisi più mirata, mi sono soffermata su alcuni aspetti dell'argomento, quali la partecipazione femminile, l'età degli atleti e le medaglie conquistate. 
+Di conseguenza, mi sono posta queste domande: 
+
+## A: il numero degli atleti partecipanti è proporzionale alle medaglie conquistate
+In questo caso, ho svolto un'analisi mirata al singolo stato, poi per ogni continente per un possibile confronto 
+
+```{r include=FALSE}
+# numero di atleti partecipanti per ogni stato 
+tot_atleti = eventi %>% 
+  group_by(NOC) %>% 
+  summarise(n = n(),
+            ID = sum(ID)) %>%
+  select(NOC, n)
+
+# numero di medaglie per ogni stato 
+tot_medaglie = eventi %>% 
+  group_by(NOC, Medal) %>% 
+  summarise(m = n())
+
+#per tutti gli atleti 
+dom_a = full_join(tot_atleti, tot_medaglie) %>%
+  mutate(perc = (m / n) * 100)
+
+# per ogni continente 
+dom_a_america = semi_join(dom_a, america)
+
+dom_a_europa = semi_join(dom_a, europa)
+
+dom_a_africa = semi_join(dom_a, africa)
+
+dom_a_asia = semi_join(dom_a, asia)
+
+dom_a_oceania = semi_join(dom_a, oceania)
+```
+
+Grafico in generale
+
+```{r echo=FALSE}
+# grafico totale 
+ggplot(dom_a, aes(n, m)) + 
+  geom_line(aes(group = Medal), alpha = 1/3) + 
+  theme_classic()
+```
+
+Continente America
+
+```{r echo=FALSE}
+ggplot(dom_a_america, aes(x = NOC, fill = Medal)) +
+  geom_bar() + 
+  labs(title = "Grafico a barre sulle percentuali di America") 
+
+dom_a_america %>% 
+  ggplot(aes(n, m, colour = Medal)) +
+  geom_line() + 
+  theme_classic()
+
+dom_a_america %>% 
+  ggplot(aes(n, m, colour = NOC)) +
+  geom_line() + 
+  theme_classic()
+```
+
+Continente Europa 
+
+```{r echo=FALSE}
+ggplot(dom_a_europa, aes(x = NOC, fill = Medal)) +
+  geom_bar() + 
+  labs(title = "Grafico a barre sulle percentuali di Europa")
+
+dom_a_europa %>% 
+  ggplot(aes(n, m, colour = Medal)) +
+  geom_line() + 
+  theme_classic()
+
+dom_a_europa %>% 
+  ggplot(aes(n, m, colour = NOC)) +
+  geom_line() + 
+  theme_classic()
+
+```
+
+Continente Africa
+
+```{r echo=FALSE}
+ggplot(dom_a_africa, aes(x = NOC, fill = Medal)) +
+  geom_bar() + 
+  labs(title = "Grafico a barre sulle percentuali di Africa")
+
+dom_a_africa %>% 
+  ggplot(aes(n, m, colour = Medal)) +
+  geom_line() + 
+  theme_classic()
+
+dom_a_africa %>% 
+  ggplot(aes(n, m, colour = NOC)) +
+  geom_line() + 
+  theme_classic()
+```
+
+Continente Asia
+
+```{r echo=FALSE}
+ggplot(dom_a_asia, aes(x = NOC, fill = Medal)) +
+  geom_bar() + 
+  labs(title = "Grafico a barre sulle percentuali di Asia")
+
+dom_a_asia %>% 
+  ggplot(aes(n, m, colour = Medal)) +
+  geom_line() + 
+  theme_classic()
+
+dom_a_asia %>% 
+  ggplot(aes(n, m, colour = NOC)) +
+  geom_line() + 
+  theme_classic()
+```
+
+COntinente Oceania
+
+```{r echo=FALSE}
+ggplot(dom_a_oceania, aes(x = NOC, fill = Medal)) +
+  geom_bar() + 
+  labs(title = "Grafico a barre sulle percentuali di Oceania")
+
+dom_a_oceania %>% 
+  ggplot(aes(n, m, colour = Medal)) +
+  geom_line() + 
+  theme_classic()
+
+dom_a_oceania %>% 
+  ggplot(aes(n, m, colour = NOC)) +
+  geom_line() + 
+  theme_classic()
+
+```
+
+## B: qual è la fascia d'età in cui si conquista più medaglie 
+per ogni stato e per ogni continente 
+
+```{r include=FALSE}
+# età media in cui si conquista una medaglia 
+eventi %>%
+  filter(!is.na(Age)) %>%
+  group_by(Medal) %>% 
+  summarise(n = n(), 
+            Age = mean(Age))
+
+#limite massimo 
+eventi %>%
+  filter(!is.na(Age), Age > 60) %>%
+  group_by(Medal) %>% 
+  summarise(n = n())
+
+#limite minimo 
+eventi %>%
+  filter(!is.na(Age), Age < 30) %>%
+  group_by(Medal) %>% 
+  summarise(n = n())
+
+# intervallo in cui si conquistano più medaglie 
+eventi %>%
+  filter(!is.na(Age),  Age < 30| Age > 40) %>%
+  group_by(Medal) %>% 
+  summarise(n = n())
+```
+
+Grafico in generale
+
+```{r include=FALSE}
+eta_medaglie = eventi %>%
+  filter(!is.na(Age)) %>%
+  group_by(Medal) %>% 
+  summarise(n = n(), 
+            Age = mean(Age))
+```
+
+```{r echo=FALSE}
+ggplot(eta_medaglie, aes(x = Medal, y = Age)) + 
+  geom_boxplot(binwidth = 0.01)
+
+```
+
+Continente America
+
+```{r echo=FALSE}
+america %>%
+  group_by(Medal) %>% 
+  summarise(n = n())
+```
+
+Continente Europa
+
+```{r echo=FALSE}
+europa %>%
+  filter(!is.na(Age)) %>% 
+  group_by(Medal) %>% 
+  summarise(n = n())
+```
+
+Continente Africa
+
+```{r echo=FALSE}
+africa %>%
+  filter(!is.na(Age)) %>% 
+  group_by(Medal) %>% 
+  summarise(n = n())
+```
+
+Continente Asia
+
+```{r echo=FALSE}
+asia %>%
+  filter(!is.na(Age)) %>% 
+  group_by(Medal) %>% 
+  summarise(n = n())
+```
+
+Continente Oceania
+
+```{r echo=FALSE}
+oceania %>%
+  filter(!is.na(Age)) %>% 
+  group_by(Medal) %>% 
+  summarise(n = n())
+```
+
+## C: quali paesi hanno vinto più medaglie 
+per ogni continente
+
+```{r include=FALSE}
+# ogni anno sono state vinte n medaglie 
+eventi %>%
+  count(Year, sort = TRUE) 
+
+# totale medaglie vinte 
+eventi%>% 
+  count(Medal)
+
+
+# numero di medaglie per ogni stato 
+tot_stati_medaglie = eventi %>% 
+  group_by(NOC, Medal) %>% 
+  summarise(n = n()) %>% 
+  arrange(-n)
+
+#oro
+oro_uomini = eventi %>% 
+  filter(Medal == "Gold", Sex == "M") %>% 
+  group_by(NOC) %>% 
+  count(sort = TRUE)
+
+oro_fem = eventi %>% 
+  filter(Medal == "Gold", Sex == "F") %>% 
+  group_by(NOC) %>% 
+  count(sort = TRUE)
+
+oro = full_join(oro_fem, oro_uomini)
+
+#argento
+argento_uomini = eventi %>% 
+  filter(Medal == "Silver", Sex == "M") %>% 
+  group_by(NOC) %>% 
+  count(sort = TRUE)
+
+argento_fem = eventi %>% 
+  filter(Medal == "Silver", Sex == "F") %>% 
+  group_by(NOC) %>% 
+  count(sort = TRUE)
+
+argento = full_join(argento_fem, argento_uomini)
+
+#bronzo
+bronzo_uomini = eventi %>% 
+  filter(Medal == "Bronze", Sex == "M") %>% 
+  group_by(NOC) %>% 
+  count(sort = TRUE)
+
+bronzo_fem = eventi %>% 
+  filter(Medal == "Bronze", Sex == "F") %>% 
+  group_by(NOC) %>% 
+  count(sort = TRUE)
+
+bronzo = full_join(bronzo_fem, bronzo_uomini)
+```
+
+Grafico 
+
+```{r}
+#in generale 
+ggplot(tot_stati_medaglie) + 
+  geom_bar(mapping = aes(x = NOC, fill = Medal))
+```
+
+Medaglie oro
+
+```{r}
+ggplot(oro) +
+  geom_boxplot(oro_fem, mapping = aes(x = NOC, y = n), color = "red") + 
+  geom_boxplot(oro_uomini, mapping = aes(x = NOC, y = n), color = "blue")
+
+oro %>%
+  ggplot(aes(NOC, n, color = NOC)) + 
+  geom_line() + 
+  theme_classic()
+```
+
+Medaglie argento 
+
+```{r}
+ggplot(argento) +
+  geom_boxplot(argento_fem, mapping = aes(x = NOC, y = n), color = "red") + 
+  geom_boxplot(argento_uomini, mapping = aes(x = NOC, y = n), color = "blue")
+
+argento %>%
+  ggplot(aes(NOC, n, color = NOC)) + 
+  geom_line() + 
+  theme_classic()
+```
+
+Medaglie bronzo
+
+```{r}
+ggplot(bronzo) +
+  geom_boxplot(bronzo_fem, mapping = aes(x = NOC, y = n), color = "red") + 
+  geom_boxplot(bronzo_uomini, mapping = aes(x = NOC, y = n), color = "blue")
+
+bronzo %>%
+  ggplot(aes(NOC, n, color = NOC)) + 
+  geom_line() + 
+  theme_classic()
+```
+
+## D: la percentuale di partecipazione femminile e maschile ai giochi olimpici
+
+```{r include=FALSE}
+# partecipazione femminile e maschile 
+eventi %>%
+  count(Sex)
+
+# numero di atleti maschi e femmine per ogni stato 
+atleti_uomini = eventi %>% 
+  filter(Sex == "M") %>% 
+  group_by(NOC, Sex) %>% 
+  summarise(n = n()) %>%
+  select(NOC, n)
+
+atleti_donna = eventi %>% 
+  filter(Sex == "F") %>% 
+  group_by(NOC, Sex) %>% 
+  summarise(m = n()) %>% 
+  select(NOC, m)
+
+atleti = full_join(atleti_uomini, atleti_donna) %>%
+  mutate(tot = n + m) %>%
+  mutate(perc_m = (n / tot) * 100) %>%
+  mutate(perc_f = (m / tot) * 100)
+
+# per ogni anno hanno partecipato n donne nell'edizione estiva
+donne_est = eventi %>% 
+  filter(Sex == "F"| Season == "Summer") %>% 
+  group_by(Year) %>% 
+  count()
+
+donne_inv = eventi %>% 
+  filter(Sex == "F"| Season == "Winter") %>% 
+  group_by(Year) %>% 
+  count()
+
+uomini_est = eventi %>% 
+  filter(Sex == "M"| Season == "Summer") %>% 
+  group_by(Year) %>% 
+  count()
+
+uomini_int = eventi %>% 
+  filter(Sex == "M"| Season == "Winter") %>% 
+  group_by(Year) %>% 
+  count()
+```
+
+
+```{r echo=FALSE}
+# num uomini e donne per ogni stato 
+ggplot(atleti) + 
+  geom_boxplot(atleti_uomini, mapping = aes(x = NOC, y = n), color = "red") + 
+  geom_boxplot(atleti_donna, mapping = aes(x = NOC, y = m), color = "blue") +
+  labs(title = "NUmero di atleti partecipanti")
+
+#per ogni anno hanno partecipato n donne nell'edizione Estiva
+ggplot(donne_est, aes(x = Year, y = n)) + 
+  geom_point() +
+  labs(title = "Numero di atlete partecipanti all'edizione estiva")
+
+ggplot(donne_inv, aes(x = Year, y = n)) + 
+  geom_point()+
+  labs(title = "Numero di atlete partecipanti all'edizione invernale")
+
+ggplot(uomini_est, aes(x = Year, y = n)) + 
+  geom_point()+
+  labs(title = "Numero di atleti partecipanti all'edizione estiva")
+
+ggplot(uomini_int, aes(x = Year, y = n)) + 
+  geom_point()+
+  labs(title = "Numero di atleti partecipanti all'edizione invernale")
+
+```
+
